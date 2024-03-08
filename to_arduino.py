@@ -7,7 +7,7 @@ import serial
 import queue
 import threading
 import time
-
+import serial.tools.list_ports as list_ports
 
 
 def set_high_priority():
@@ -43,19 +43,25 @@ def get_text():
 
     return text 
 
+
 def get_telemetry_data():
     global data_queue
-    lag = .05
+    lag = .1
     last = time.time()
     
     status = 'not connected'
+    
+    
     last_message = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
     while True:
         try:
             if ir.is_connected:
                 if not(ir['IsInGarage']):
                     if status == 'not connected':
+                        print('_____________________________________________________')
                         print('Starting Logging')
+                        
                     status = 'connected'
                     text = get_text()
                     if last_message[16:] != text[16:]:    
@@ -68,47 +74,86 @@ def get_telemetry_data():
                     last = now
                 else:
                     if status == 'connected':
-                        print('disconnected')
+                        print('_____________________________________________________')
+                        print('Stopping Logging')
                     status = 'not connected'
             else: 
                 if status == 'connected':
-                    print('disconnected')
+                    print('IRACING Disconnected')
                 status = 'not connected'
         except Exception as e:
+            print(f'Error {e}')
             pass
                 
+
+def find_port(nofault = False):
+    ports = list_ports.comports()
+    
+    print(f'Found {len(ports)} adapters')
+    
+    for port, desc, hwid in sorted(ports):
+        try:
+            print(f"Checking Adapter : {port} : {desc}")
+            ser = serial.Serial(port, 115200, timeout=1)
+            start = time.time()
+            now = time.time()
+            while now - start < 5:
+                line = ser.readline().decode().strip()
+                if "ID: RyGuysAdapter" in line:
+                    print('RyGuysAdapter Found!')
+                    ser.close()
+                    return port
+                now = time.time()
+            ser.close()
+        except:
+            print(f"Can not Connect to {port} IF THIS IS THE ONE THEN TRY AND REPLUG IT")
+            pass
+    
+
+    
+    if nofault:
+        print('NO ADAPTER FOUND, Program will now shutdown')
+        input('PRESS ENTER TO CLOSE')
+        
+    return False
+
 
 
 
 def send_to_bluetooth():
-    texts = []
-    while True:
-        if not data_queue.empty():
-            texts.append(data_queue.get())
-            
-        if len(texts) > 5:
-            data = ''.join(texts)+ '\n'
-            s.write(data.encode()) 
-            texts = []
-
-            
+    global s
+    try:
+        texts = []
+        while True:
+            if not data_queue.empty():
+                texts.append(data_queue.get())
+                
+            if len(texts) > 5:
+                data = ''.join(texts)+ '\n'
+                s.write(data.encode()) 
+                texts = []
+    except Exception as e:
+        texts = []
+        s.close()
+        port = find_port(nofault = True)
+        s = serial.Serial(port, 115200)
+        pass
 
 
 set_high_priority()
-print('priority set')
+print('System Priority set')
 
 data_queue = queue.Queue()
-print('Que setup')
+print('DATA Queue Loaded')
 
 ir = irsdk.IRSDK()
 ir.startup()
-print('Iracing Connected')
+print('Iracing Connector Booted')
 
-s = serial.Serial('COM8', 115200,)
-print('serial connected')
-
+port = find_port()
+s = serial.Serial(port, 115200,)
+print('RyGuy connected')
     
-
 
 ir_thread = threading.Thread(target=get_telemetry_data)
 b_thread = threading.Thread(target=send_to_bluetooth)

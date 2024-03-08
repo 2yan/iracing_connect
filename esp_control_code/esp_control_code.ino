@@ -6,24 +6,32 @@
 
 BluetoothSerial SerialBT;
 String message = "";
+unsigned long lastMessageTime = 0; // Track the last time a message was received
 
 void setup() {
   Serial.begin(115200);
-  SerialBT.begin("Iracingv2"); // Bluetooth device name
-  Serial.println("The device started, now you can pair it with bluetooth!");
+  SerialBT.begin("RyGuysAdapter"); // Bluetooth device name
+  Serial.println("ID: RyGuysAdapter");
 }
 
 void loop() {
-  while (Serial.available()) {
-    char inChar = (char)Serial.read();
-    message += inChar;
-    if (inChar == '\n') {
-      message.remove(message.length() - 1);
-
-      SerialBT.write(reinterpret_cast<const uint8_t*>(message.c_str()), message.length());
-      message = "";
-      break; 
+  if (Serial.available()) {
+    lastMessageTime = millis(); // Update the last message time
+    while (Serial.available()) {
+      char inChar = (char)Serial.read();
+      message += inChar;
+      if (inChar == '\n') {
+        message.remove(message.length() - 1);
+        SerialBT.write(reinterpret_cast<const uint8_t*>(message.c_str()), message.length());
+        message = "";
+        return; // Changed from break to return to exit the function after processing input
+      }
     }
   }
   
+  // If more than 3 seconds have passed since the last message, send the unique ID
+  if (millis() - lastMessageTime > 3000) {
+    Serial.println("ID: RyGuysAdapter");
+    lastMessageTime = millis(); // Reset the timer after sending the ID
+  }
 }
