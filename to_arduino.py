@@ -41,7 +41,6 @@ def get_text():
     
     text = f"$IRTEL,{session_time:.3f},{enter_exit_reset:d},{lap:d},{lap_dist_pct:f},{on_pit_road:d},0.000000,0.000000,0.000000,{speed:f},{throttle_raw:f},{brake_raw:f},{steering_wheel_angle:f},{rpm:f},{velocity_x:f},{velocity_y:f},{velocity_z:f},{lat_accel:f},{long_accel:f},{vert_accel:f},{yaw_rate:f},{pitch_rate:f},{roll_rate:f},{pitch:f},{roll:f},{yaw_north:f}"
 
-    print(f"\r LAP PCT: {lap_dist_pct}", end="")
     return text 
 
 def get_telemetry_data():
