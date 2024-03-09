@@ -9,7 +9,7 @@ import win32api
 import win32process
 import win32con
 import os
-        
+import iracing
 from enum import Enum
 import irsdk
 import threading
@@ -24,6 +24,7 @@ class IRacingStatus(Enum):
     GAME_NOT_STARTED = "Game Not Started"
     BOOTING = 'Booting'
     CRASHED = 'CRASHED'
+    GAME_STARTED = "Game Started"
 
 class SerialStatus(Enum):
     CONNECTED = 'Connected'
@@ -93,9 +94,10 @@ class Robot:
     
         
     def __init__(self):
+
         # Initalize variables
         self.serial_status = SerialStatus.BOOTING
-        self.iracing_status = IRacingStatus.BOOTING
+        self.iracing_status = IRacingStatus.CONNECTED_ON_TRACK
         self.serial = False
         self.last_message = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx'
         self.ir = False
@@ -109,15 +111,7 @@ class Robot:
         self.stop_send = False
         
         
-        return 
-    
-    def set_ir(self):
-        if self.ir:
-            self.ir.shutdown()
-        ir = irsdk.IRSDK()
-        ir.startup()
         
-        self.ir = ir
         return 
     
 
@@ -129,18 +123,30 @@ class Robot:
             i = i + 1
             if i > 60:
                 i = 0
+            
+            
+            if iracing.sim_is_on():
+                self.iracing_status = IRacingStatus.GAME_STARTED
+                
+                if self.ir: 
+                    if self.ir.is_connected and self.ir.is_initialized:
+                       if self.ir['IsOnTrack']:
+                           self.iracing_status = IRacingStatus.CONNECTED_ON_TRACK
+                       else:
+                           self.iracing_status = IRacingStatus.CONNECTED_NOT_ON_TRACK
+                    else:
+                        self.ir.startup()
+                else:
+                    self.ir = irsdk.IRSDK()
+                    self.ir.startup()
+            else:
+                self.iracing_status = IRacingStatus.GAME_NOT_STARTED
+                if self.ir:
+                    self.ir.shutdown()
+                
 
                 
-            if self.ir:
-                if self.ir.is_connected:
-                    if self.ir['IsOnTrack']:
-                        self.iracing_status = IRacingStatus.CONNECTED_ON_TRACK
-                    else:
-                        self.iracing_status = IRacingStatus.CONNECTED_NOT_ON_TRACK
-                        self.ir.startup()
-            else: 
-                self.set_ir()
-                self.iracing_status = IRacingStatus.GAME_NOT_STARTED
+
                     
                     
             if not(self.serial):
@@ -187,22 +193,21 @@ class Robot:
 
             
         
-    def data_pull_loop(self):
+    def data_pull_loop(self):        
         while True:
             if (self.iracing_status == IRacingStatus.CONNECTED_ON_TRACK) and  (self.serial_status == SerialStatus.CONNECTED):
                 text = get_text(self.ir)
-                if self.last_message[16:] != text[16:]:    
-                    self.data_queue.put(text)
-                    time.sleep(.1)
+                self.data_queue.put(text)
     
-
                 self.last_message = text
             else:
+                
                 return 
-                self.data_queue.get()
+                
                 
     def data_send_loop(self):
         texts = []
+        
         while True:
             if (self.iracing_status == IRacingStatus.CONNECTED_ON_TRACK) and  (self.serial_status == SerialStatus.CONNECTED):
                 if not self.data_queue.empty():
@@ -213,6 +218,7 @@ class Robot:
                     self.serial.write(data.encode()) 
                     texts = []
             else: 
+                
                 return 
                     
 
