@@ -189,7 +189,7 @@ class Robot:
             if port == False:
                 port = ''
                 
-            print(f"""\r IRACING Status:{iracing_status} RyGuy STATUS: {serial_status} - {port}| Queue Size:{r.data_queue.qsize()} : DATASPEED {i}      """, end = '')
+            print(f"""\r Iracing:{iracing_status} XX RyGuy:{serial_status} XX {port} XX Queue Size:{r.data_queue.qsize()} XX DATASPEED {i}       """, end = '')
 
             
         
