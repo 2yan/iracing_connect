@@ -198,7 +198,7 @@ class Robot:
             if (self.iracing_status == IRacingStatus.CONNECTED_ON_TRACK) and  (self.serial_status == SerialStatus.CONNECTED):
                 text = get_text(self.ir)
                 self.data_queue.put(text)
-    
+                time.sleep(.1)
                 self.last_message = text
             else:
                 
