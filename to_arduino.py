@@ -89,7 +89,9 @@ def get_telemetry_data():
 def find_port(nofault = False):
     ports = list_ports.comports()
     
-    print(f'Found {len(ports)} adapters')
+    if len(ports) > 0:
+        print(f'Found {len(ports)} adapter(s)')
+    
     
     for port, desc, hwid in sorted(ports):
         try:
@@ -119,6 +121,22 @@ def find_port(nofault = False):
 
 
 
+def get_serial():
+    print("Looking for RyGuy Device")
+    i = 0
+    while True:
+        port = find_port()
+        if port:
+            s = serial.Serial(port, 115200,)
+            print('RyGuy connected')
+            return s
+        time.sleep(5)
+        i = i + 1
+       
+        print(f'\r{i} Waiting For Adapter', end='')
+        
+            
+        
 
 def send_to_bluetooth():
     global s
@@ -150,9 +168,9 @@ ir = irsdk.IRSDK()
 ir.startup()
 print('Iracing Connector Booted')
 
-port = find_port()
-s = serial.Serial(port, 115200,)
-print('RyGuy connected')
+
+s = get_serial()
+
     
 
 ir_thread = threading.Thread(target=get_telemetry_data)
