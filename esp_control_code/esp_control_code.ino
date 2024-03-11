@@ -10,8 +10,8 @@ unsigned long lastMessageTime = 0; // Track the last time a message was received
 
 void setup() {
   Serial.begin(115200);
-  SerialBT.begin("RyGuysAdapter"); // Bluetooth device name
-  Serial.println("ID: RyGuysAdapter");
+  SerialBT.begin("RyGuysAdapter S0X BETA"); // Bluetooth device name
+  Serial.println("ID: RyGuysAdapter S0X BETA");
 }
 
 void loop() {
@@ -31,7 +31,7 @@ void loop() {
   
   // If more than 3 seconds have passed since the last message, send the unique ID
   if (millis() - lastMessageTime > 3000) {
-    Serial.println("ID: RyGuysAdapter");
+    Serial.println("ID: RyGuysAdapter S0X BETA");
     lastMessageTime = millis(); // Reset the timer after sending the ID
   }
 }
