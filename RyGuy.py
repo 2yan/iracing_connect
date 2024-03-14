@@ -17,7 +17,7 @@ import time
 import serial.tools.list_ports as list_ports
 import serial
 import queue
-
+WAIT_TIME = .05
 class IRacingStatus(Enum):
     CONNECTED_ON_TRACK = "Connected - On Track!"
     CONNECTED_NOT_ON_TRACK = "Connected - Car Not on track"
@@ -120,6 +120,7 @@ class Robot:
     
     def run(self):
         i = 0
+        last_time = time.time()
         while True:
             i = i + 1
             if i > 60:
@@ -187,13 +188,18 @@ class Robot:
                 
             if (self.iracing_status != IRacingStatus.CONNECTED_ON_TRACK) and (self.serial_status == SerialStatus.CONNECTED):
                 blank = iracing.get_blank()
-                self.max_time = self.max_time + .1
+                self.max_time = self.max_time + WAIT_TIME
                 blank = blank.replace('TIME', f'{self.max_time:.3f}')
                 if '\n' not in blank:
                     blank = blank + '\n'
-                time.sleep(.1)
+                
                 try:
+                    now = time.time()
+                    difference = now - last_time
+                    if difference < WAIT_TIME:
+                        time.sleep(WAIT_TIME - difference)
                     self.send_data(blank)
+                    last_time = now
                 except Exception as e:
                     continue
 
@@ -209,13 +215,21 @@ class Robot:
 
             
         
-    def data_pull_loop(self):        
+    def data_pull_loop(self):       
+        last_time = time.time()
         while True:
             if (self.iracing_status == IRacingStatus.CONNECTED_ON_TRACK) and  (self.serial_status == SerialStatus.CONNECTED):
                 text = self.get_text()
                 self.last_message = self.ir['SessionTime']
+                now = time.time()
+                difference = now - last_time
+                if difference < WAIT_TIME:
+                    time.sleep(WAIT_TIME- difference)
                 self.data_queue.put(text)
-                time.sleep(.1)
+                
+                
+                
+                time.sleep(WAIT_TIME)
                 self.last_message = text
             else:
                 
@@ -296,7 +310,7 @@ Throttle
 Brakes
 and Steering Angle are available. Select Iracing <variable>
 
-
+This software needs to be running for the adapter to function.
 
 """
 if __name__ == '__main__':
